@@ -1,5 +1,5 @@
 import pytest
-from app.main import app, users
+from app.main import app, users, failed_attempts, lockout_time
 
 # Фикстура для тестирования Flask-приложения
 @pytest.fixture
@@ -8,6 +8,8 @@ def client():
     app.config['SECRET_KEY'] = 'your_secret_key'  # Для работы с сессиями
     with app.test_client() as client:
         users.clear()
+        failed_attempts.clear()  # Очищаем неудачные попытки
+        lockout_time.clear()  # Очищаем время блокировки
         yield client
 
 # Тест на успешную регистрацию
@@ -100,3 +102,27 @@ def test_update_profile_unauthenticated(client):
     response = client.put('/profile/update', json={'password': 'newpassword123'})
     assert response.status_code == 401
     assert response.json['error'] == 'User not logged in'
+
+# Тест на удаление аккаунта авторизованным пользователем
+def test_delete_account_authenticated(client):
+    # Регистрация и авторизация пользователя
+    client.post('/register', json={'username': 'user1', 'password': 'password123'})
+    client.post('/login', json={'username': 'user1', 'password': 'password123'})
+
+    # Удаление аккаунта
+    response = client.delete('/delete-account')
+    assert response.status_code == 200
+    assert response.json['message'] == 'Account deleted successfully'
+
+    # Проверяем, что пользователь удален
+    response = client.get('/profile')
+    assert response.status_code == 401
+    assert response.json['error'] == 'User not logged in'
+
+# Тест на удаление аккаунта неавторизованного пользователя
+def test_delete_account_unauthenticated(client):
+    # Попытка удалить аккаунт без авторизации
+    response = client.delete('/delete-account')
+    assert response.status_code == 401
+    assert response.json['error'] == 'User not logged in'
+

@@ -84,6 +84,23 @@ def update_profile():
 
     return jsonify({'message': 'Profile updated successfully'}), 200
 
+# Маршрут для удаления аккаунта
+@app.route('/delete-account', methods=['DELETE'])
+def delete_account():
+    # Проверка, авторизован ли пользователь
+    if 'username' not in session:
+        return jsonify({'error': 'User not logged in'}), 401
+
+    # Удаляем пользователя из хранилища
+    username = session['username']
+    del users[username]
+
+    # Очищаем сессию
+    session.pop('username', None)
+
+    return jsonify({'message': 'Account deleted successfully'}), 200
+
+
 # Запуск приложения (необходим для отладки)
 if __name__ == "__main__":
     app.run(debug=True)
