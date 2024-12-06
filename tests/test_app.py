@@ -39,3 +39,13 @@ def test_login_success(client):
     response = client.post('/login', json={'username': 'user1', 'password': 'password123'})
     assert response.status_code == 200
     assert response.json['message'] == 'Login successful'
+
+# Тест на авторизацию с неправильным паролем
+def test_login_invalid_password(client):
+    # Регистрация пользователя
+    client.post('/register', json={'username': 'user1', 'password': 'password123'})
+
+    # Попытка авторизоваться с неверным паролем
+    response = client.post('/login', json={'username': 'user1', 'password': 'wrongpassword'})
+    assert response.status_code == 400
+    assert response.json['error'] == 'Invalid password'
