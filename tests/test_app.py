@@ -69,3 +69,10 @@ def test_profile_authenticated(client):
     assert response.status_code == 200
     assert response.json['username'] == 'user1'
     assert response.json['message'] == 'Profile data'
+
+# Тест на получение профиля неавторизованного пользователя
+def test_profile_unauthenticated(client):
+    # Запрос к маршруту профиля без авторизации
+    response = client.get('/profile')
+    assert response.status_code == 401
+    assert response.json['error'] == 'User not logged in'
