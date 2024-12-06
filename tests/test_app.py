@@ -1,5 +1,7 @@
 import pytest
 from app.main import app, users, failed_attempts, lockout_time
+from datetime import datetime, timedelta
+
 
 # Фикстура для тестирования Flask-приложения
 @pytest.fixture
@@ -126,3 +128,29 @@ def test_delete_account_unauthenticated(client):
     assert response.status_code == 401
     assert response.json['error'] == 'User not logged in'
 
+# Тест на ограничение количества попыток входа
+def test_login_attempts_limit(client):
+    # Регистрация пользователя
+    client.post('/register', json={'username': 'user1', 'password': 'password123'})
+
+    # Три неудачные попытки входа
+    for i in range(2):
+        response = client.post('/login', json={'username': 'user1', 'password': 'wrongpassword'})
+        assert response.status_code == 400
+        assert response.json['error'] == 'Invalid password'
+
+    # Четвертая попытка должна заблокировать аккаунт
+    response = client.post('/login', json={'username': 'user1', 'password': 'wrongpassword'})
+    assert response.status_code == 403
+    assert response.json['error'] == 'Too many failed attempts. Account locked for 10 minutes.'
+
+    # Попытка входа после блокировки
+    response = client.post('/login', json={'username': 'user1', 'password': 'password123'})
+    assert response.status_code == 403
+    assert 'Account is locked. Try again in' in response.json['error']  # Проверка наличия текста блокировки
+
+    # Проверка успешного входа после окончания блокировки
+    lockout_time['user1'] = datetime.now() - timedelta(seconds=1)  # Симуляция окончания блокировки
+    response = client.post('/login', json={'username': 'user1', 'password': 'password123'})
+    assert response.status_code == 200
+    assert response.json['message'] == 'Login successful'

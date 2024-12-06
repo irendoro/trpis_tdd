@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify, session
 from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import datetime, timedelta
 
 # Создание Flask-приложения
 app = Flask(__name__)
@@ -9,6 +10,14 @@ app.secret_key = 'your_secret_key'
 
 # Временное хранилище пользователей
 users = {}
+
+# Хранилище для отслеживания неудачных попыток входа
+failed_attempts = {}
+lockout_time = {}
+
+# Максимальное количество попыток
+MAX_FAILED_ATTEMPTS = 3
+LOCKOUT_DURATION = timedelta(minutes=10)
 
 # Маршрут регистрации
 @app.route('/register', methods=['POST'])
@@ -44,15 +53,33 @@ def login():
     # Проверка существования пользователя
     if username not in users:
         return jsonify({'error': 'Invalid username'}), 400
+    
+    # Проверка блокировки аккаунта
+    if username in lockout_time:
+        time_left = lockout_time[username] - datetime.now()
+        if time_left > timedelta(seconds=0):
+            return jsonify({'error': f'Account is locked. Try again in {time_left}'}), 403
+        else:
+            del lockout_time[username]  # Снимаем блокировку, если время прошло
 
     # Проверка пароля
     if not check_password_hash(users[username], password):
-        return jsonify({'error': 'Invalid password'}), 400
+         # Увеличиваем количество неудачных попыток
+        failed_attempts[username] = failed_attempts.get(username, 0) + 1
+        if failed_attempts[username] >= MAX_FAILED_ATTEMPTS:
+            lockout_time[username] = datetime.now() + LOCKOUT_DURATION
+            failed_attempts[username] = 0  # Сбрасываем счетчик неудачных попыток
+            return jsonify({'error': 'Too many failed attempts. Account locked for 10 minutes.'}), 403
+        return jsonify({'error': 'Invalid password'}), 400  # Вернуть статус 400 на 3-й неудачной попытке
     
+    # Сбрасываем неудачные попытки, если вход успешен
+    failed_attempts[username] = 0
+
     # Сохраняем информацию о пользователе в сессии
     session['username'] = username
 
     return jsonify({'message': 'Login successful'}), 200
+
 
 # Маршрут получения профиля
 @app.route('/profile', methods=['GET'])
