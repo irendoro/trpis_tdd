@@ -1,5 +1,5 @@
 import pytest
-from app.main import app, users, failed_attempts, lockout_time
+from app.main import app, users, failed_attempts, lockout_time, user_roles
 from datetime import datetime, timedelta
 
 
@@ -154,3 +154,17 @@ def test_login_attempts_limit(client):
     response = client.post('/login', json={'username': 'user1', 'password': 'password123'})
     assert response.status_code == 200
     assert response.json['message'] == 'Login successful'
+
+def test_admin_registration(client):
+    # Первый пользователь должен быть администратором
+    response = client.post('/register', json={'username': 'user1', 'password': 'password123'})
+    assert response.status_code == 201
+    assert response.json['message'] == 'Registration successful'
+
+    # Проверка, что первый пользователь является администратором
+    assert user_roles['user1'] == 'admin'
+
+    # Регистрация второго пользователя
+    response = client.post('/register', json={'username': 'user2', 'password': 'password123'})
+    assert response.status_code == 201
+    assert user_roles['user2'] == 'user'  # Второй пользователь обычный

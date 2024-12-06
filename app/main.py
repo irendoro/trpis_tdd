@@ -10,6 +10,10 @@ app.secret_key = 'your_secret_key'
 
 # Временное хранилище пользователей
 users = {}
+user_roles = {}
+
+# Словарь для хранения паролей
+passwords = {}
 
 # Хранилище для отслеживания неудачных попыток входа
 failed_attempts = {}
@@ -34,9 +38,16 @@ def register():
     if username in users:
         return jsonify({'error': 'Username already exists'}), 400
 
+    # Регистрируем первого пользователя как администратора
+    if not users:
+        user_roles[username] = 'admin'  # Назначаем роль администратор для первого пользователя
+    else:
+        user_roles[username] = 'user'  # По умолчанию обычный пользователь для остальных
+
     # Сохранение нового пользователя
     # Хешируем пароль перед сохранением
     users[username] = generate_password_hash(password)
+    passwords[username] = password
     return jsonify({'message': 'Registration successful'}), 201
 
 # Маршрут авторизации
