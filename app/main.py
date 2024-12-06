@@ -65,6 +65,25 @@ def profile():
     username = session['username']
     return jsonify({'username': username, 'message': 'Profile data'}), 200
 
+# Маршрут для обновления профиля
+@app.route('/profile/update', methods=['PUT'])
+def update_profile():
+    # # Проверка, авторизован ли пользователь
+    # if 'username' not in session:
+    #     return jsonify({'error': 'User not logged in'}), 401
+
+    data = request.json
+    password = data.get('password')
+
+    # Проверка, что пароль передан
+    if not password:
+        return jsonify({'error': 'Password is required'}), 400
+
+    # Хешируем новый пароль и сохраняем его
+    users[session['username']] = generate_password_hash(password)
+
+    return jsonify({'message': 'Profile updated successfully'}), 200
+
 # Запуск приложения (необходим для отладки)
 if __name__ == "__main__":
     app.run(debug=True)
