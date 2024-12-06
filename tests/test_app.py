@@ -29,3 +29,13 @@ def test_registration_duplicate_username(client):
     print(response.json)  # Добавим вывод для диагностики
     assert response.status_code == 400
     assert response.json['error'] == 'Username already exists'
+
+# Тест на успешную авторизацию
+def test_login_success(client):
+    # Регистрация пользователя
+    client.post('/register', json={'username': 'user1', 'password': 'password123'})
+
+    # Авторизация с правильными данными
+    response = client.post('/login', json={'username': 'user1', 'password': 'password123'})
+    assert response.status_code == 200
+    assert response.json['message'] == 'Login successful'

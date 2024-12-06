@@ -29,6 +29,30 @@ def register():
     users[username] = password
     return jsonify({'message': 'Registration successful'}), 201
 
+# Маршрут авторизации
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.json
+    username = data.get('username')
+    password = data.get('password')
+
+    # Логирование данных
+    print(f"Received data: {data}")
+
+    # Проверка, что данные заполнены
+    if not username or not password:
+        return jsonify({'error': 'Username and password are required'}), 400
+
+    # Проверка существования пользователя
+    if username not in users:
+        return jsonify({'error': 'Invalid username'}), 400
+
+    # Проверка пароля
+    if users[username] != password:
+        return jsonify({'error': 'Invalid password'}), 400
+
+    return jsonify({'message': 'Login successful'}), 200
+
 
 # Запуск приложения (необходим для отладки)
 if __name__ == "__main__":
