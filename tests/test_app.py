@@ -49,3 +49,10 @@ def test_login_invalid_password(client):
     response = client.post('/login', json={'username': 'user1', 'password': 'wrongpassword'})
     assert response.status_code == 400
     assert response.json['error'] == 'Invalid password'
+
+# Тест на авторизацию с неправильным логином
+def test_login_invalid_username(client):
+    # Попытка авторизоваться с несуществующим логином
+    response = client.post('/login', json={'username': 'nonexistent', 'password': 'password123'})
+    assert response.status_code == 400
+    assert response.json['error'] == 'Invalid username'
