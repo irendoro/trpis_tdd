@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify, session
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
+import re
 
 # Создание Flask-приложения
 app = Flask(__name__)
@@ -23,6 +24,13 @@ lockout_time = {}
 MAX_FAILED_ATTEMPTS = 3
 LOCKOUT_DURATION = timedelta(minutes=10)
 
+# Валидация логина и пароля
+def validate_username(username):
+    return len(username) >= 3 and re.match(r'^[a-zA-Z0-9_]+$', username) is not None
+
+def validate_password(password):
+    return len(password) >= 6 and re.match(r'^[a-zA-Z0-9_]+$', password) is not None
+
 # Маршрут регистрации
 @app.route('/register', methods=['POST'])
 def register():
@@ -37,6 +45,12 @@ def register():
     # Проверка уникальности логина
     if username in users:
         return jsonify({'error': 'Username already exists'}), 400
+
+     # Валидация логина и пароля
+    if not validate_username(username):
+        return jsonify({'error': 'Username must be at least 3 characters long and can only contain letters, numbers, and underscores'}), 400
+    if not validate_password(password):
+        return jsonify({'error': 'Password must be at least 6 characters long and can only contain letters, numbers, and underscores'}), 400
 
     # Регистрируем первого пользователя как администратора
     if not users:
@@ -106,16 +120,26 @@ def profile():
 # Маршрут для обновления профиля
 @app.route('/profile/update', methods=['PUT'])
 def update_profile():
+    username = session.get('username')
     # Проверка, авторизован ли пользователь
     if 'username' not in session:
         return jsonify({'error': 'User not logged in'}), 401
 
     data = request.json
+    new_username = data.get('username')
     password = data.get('password')
 
     # Проверка, что пароль передан
     if not password:
         return jsonify({'error': 'Password is required'}), 400
+    
+    # Проверка, что username передан в запросе
+    if not new_username:
+        return jsonify({'error': 'Username is required'}), 400
+    
+    # Проверка роли
+    if user_roles[username] != 'admin' and new_username != username:
+        return jsonify({'error': 'Permission denied'}), 403
 
     # Хешируем новый пароль и сохраняем его
     users[session['username']] = generate_password_hash(password)
