@@ -93,3 +93,10 @@ def test_update_profile_authenticated(client):
     response = client.post('/login', json={'username': 'user1', 'password': 'newpassword123'})
     assert response.status_code == 200
     assert response.json['message'] == 'Login successful'
+
+# Тест на обновление профиля неавторизованного пользователя
+def test_update_profile_unauthenticated(client):
+    # Попытка обновления профиля без авторизации
+    response = client.put('/profile/update', json={'password': 'newpassword123'})
+    assert response.status_code == 401
+    assert response.json['error'] == 'User not logged in'

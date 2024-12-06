@@ -68,9 +68,9 @@ def profile():
 # Маршрут для обновления профиля
 @app.route('/profile/update', methods=['PUT'])
 def update_profile():
-    # # Проверка, авторизован ли пользователь
-    # if 'username' not in session:
-    #     return jsonify({'error': 'User not logged in'}), 401
+    # Проверка, авторизован ли пользователь
+    if 'username' not in session:
+        return jsonify({'error': 'User not logged in'}), 401
 
     data = request.json
     password = data.get('password')
