@@ -5,6 +5,7 @@ from app.main import app, users
 @pytest.fixture
 def client():
     app.config['TESTING'] = True  # Включение режима тестирования
+    app.config['SECRET_KEY'] = 'your_secret_key'  # Для работы с сессиями
     with app.test_client() as client:
         users.clear()
         yield client
@@ -56,3 +57,15 @@ def test_login_invalid_username(client):
     response = client.post('/login', json={'username': 'nonexistent', 'password': 'password123'})
     assert response.status_code == 400
     assert response.json['error'] == 'Invalid username'
+
+# Тест на получение профиля авторизованного пользователя
+def test_profile_authenticated(client):
+    # Регистрация и авторизация пользователя
+    client.post('/register', json={'username': 'user1', 'password': 'password123'})
+    client.post('/login', json={'username': 'user1', 'password': 'password123'})
+
+    # Запрос к маршруту профиля
+    response = client.get('/profile')
+    assert response.status_code == 200
+    assert response.json['username'] == 'user1'
+    assert response.json['message'] == 'Profile data'
